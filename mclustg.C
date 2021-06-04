@@ -31,22 +31,22 @@
 #define f0mZ 1.0E3 // Flux Intercept medium Z /m^2/s/sr
 #define f0hZ 1.5E3 // Flux Intercept hight Z  /m^2/s/sr
 
-#define fout1 "p_e20_clsts.txt" //
-#define fout2 "p_e20_shows.txt" //
-#define fout3 "p_e20_parts.txt" //
-#define fout4 "p_e20_pgrid.txt" //
-#define fout5 "p_e20_cgrid.txt" //
-#define fout6 "p_e20_cgride.txt" //
-#define fout7 "p_e20_cgridm.txt" //
-#define fout8 "p_e20_cgridx.txt" //
-#define fout9 "p_e20_rpart.txt" //
-#define fouta "p_e20_rclst.txt" //
-#define foutb "p_e20_rclte.txt" //
-#define foutc "p_e20_rcltm.txt" //
-#define foutd "p_e20_rcltx.txt" //
+#define fout1 "xout1.txt" // p_e20_clsts.txt" //
+#define fout2 "xout2.txt" //"p_e20_shows.txt" //
+#define fout3 "xout3.txt" //"p_e20_parts.txt" //
+#define fout4 "xout4.txt" //"p_e20_pgrid.txt" //
+#define fout5 "xout5.txt" //"p_e20_cgrid.txt" //
+//#define fout6 "xout1.txt" //"p_e20_cgride.txt" //
+//#define fout7 "xout1.txt" //"p_e20_cgridm.txt" //
+//#define fout8 "xout1.txt" //"p_e20_cgridx.txt" //
+#define fout9 "xout9.txt" //"p_e20_rpart.txt" //
+#define fouta "xouta.txt" //"p_e20_rclst.txt" //
+#define foutb "xoutb.txt" //"p_e20_rclte.txt" //
+#define foutc "xoutc.txt" //"p_e20_rcltm.txt" //
+#define foutd "xoutd.txt" //"p_e20_rcltx.txt" //
 
 //#define ngrid 1000
-#define nbox 100
+#define nbox 200
 #define len 1000. //m. Size of the box
 
 // using namespace std;
@@ -88,8 +88,8 @@ void mclustg::Loop()
    if (fChain == 0) return;
 
    Long64_t nshow = fChain->GetEntriesFast();
-    
-   // nshow = 10;   //-
+    cout << " nshow: " << nshow << endl;
+   nshow = 1;   //-
    cout << "nShowers " << nshow << endl;
     
    Long64_t nbytes = 0, nb = 0;
@@ -153,7 +153,7 @@ void mclustg::Loop()
     Float_t hghtfi, mnhgt=0;  // first height, mean hght
     Float_t rad2g;
     rad2g = 180/TMath::Pi();
-
+    
     fstream ofclst;
     fstream ofshws;
     fstream ofpart;
@@ -183,13 +183,13 @@ void mclustg::Loop()
     ofshws << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
     ofpart << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
     ofpgrd << "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofcgrd << "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofrpart<< "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofrclst<< "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofrclte<< "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofrcltm<< "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-    ofrcltx<< "# Particle grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
-
+    ofcgrd << "# Cluster grid. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    ofrpart<< "# Particle radial dist. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    ofrclst<< "# Clusters radial dist. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    ofrclte<< "# EM Clusters radial dist. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    ofrcltm<< "# Muon Clusters radial dist. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    ofrcltx<< "# Mixed Clusters radial dist. Mass, logE/GeV " << "\t" << mpcr << "\t" << epcr << endl;
+    
     ofclst <<
     "#PrCR"    << "\t" <<
     "EnePCR"   << "\t" <<
@@ -335,36 +335,44 @@ void mclustg::Loop()
 // *******************************************************************************
 // *******************************************************************************
     
-    Int_t pgrid[nshow][nbox][nbox], tagrd[nshow][nbox][nbox],cgrid[nshow][nbox][nbox],
-    cgride[nshow][nbox][nbox],cgridm[nshow][nbox][nbox],cgridx[nshow][nbox][nbox];
-    cout << " punto 1 " << endl;
+    Int_t pgrid[nshow][nbox][nbox],cgrid[nshow][nbox][nbox];
+    //Int_t cgride[nshow][nbox][nbox],cgridm[nshow][nbox][nbox],cgridx[nshow][nbox][nbox];
     Float_t rgrid[nbox][nbox], rsign,
     rpart[nbox], rclst[nbox], rclte[nbox], rcltm[nbox], rcltx[nbox];
-    cout << " punto 2 " << endl;
     Float_t cellw, celdw, lminx=-len/2., lminy=-len/2., lmind= -len/sqrt(2.), xcell, ycell ;
     Int_t irow, icol, irows, icols, idia;
-    
 
-    
     cellw = len/nbox;
     celdw = cellw * sqrt(2);   // cell diagonal width
  
     for(Int_t i=0; i<nshow; i++ )
         for(Int_t j=0; j<nbox; j++ )
-            for(Int_t k=0; k< nbox; k++  )
-                {
-                pgrid[i][j][k] = 0;
-                cgrid[i][j][k] = 0;
-                cgride[i][j][k] = 0;
-                cgridm[i][j][k] = 0;
-                cgridx[i][j][k] = 0;
+    for(Int_t k=0; k<nbox; k++  ){
+                pgrid[i][j][k] = 0.;
+                cgrid[i][j][k] = 0.;
+                //cgride[i][j][k] = 0.;
+                //cgridm[i][j][k] = 0.;
+                //cgridx[i][j][k] = 0.;
 
                 //cout << "a[" << j << "][" << k << "]: ";
                 //std::cout<<"matriz="<< pgrid[i][j][k]<<endl;
                 }
+    
+    for(Int_t i=0; i<nshow; i++ )
+        for(Int_t j=0; j<nbox; j++ )
+            for(Int_t k=0; k<nbox; k++  ){
+                pgrid[i][j][k] = 0.;
+                cgrid[i][j][k] = 0.;
+                //cgride[i][j][k] = 0.;
+                //cgridm[i][j][k] = 0.;
+                //cgridx[i][j][k] = 0.;
+
+                //cout << "a[" << j << "][" << k << "]: ";
+                //std::cout<<"matriz="<< pgrid[i][j][k]<<endl;
+                }
+    
     for(Int_t i=0; i<nbox; i++ )
-        for(Int_t j=0; j<nbox; j++  )
-            {
+        for(Int_t j=0; j<nbox; j++  ){
             xcell = (i+0.5)*cellw - len/2 - 0.000001;   // avoiding zero value
             ycell = (j+0.5)*cellw - len/2 - 0.000001;
             rgrid[i][j] = sqrt(pow(xcell,2) + pow(ycell,2));
@@ -382,12 +390,8 @@ void mclustg::Loop()
     }
         
     for (Long64_t ishow=0; ishow<nshow; ishow++) {
-
        // cout << " *** new shower " << ishow+1 << endl;
-       
        Long64_t itree = LoadTree(ishow);
-        
-       // cout << " Punto 1" << endl;
        
        if (itree < 0) break;
        
@@ -403,6 +407,7 @@ void mclustg::Loop()
     
        hghtfi = shower_FirstHeight/100000; // h en kilometros
        mnhgt   = mnhgt + (hghtfi-mnhgt)/(ishow+1);
+       cout << "ene, hghtfi: " << shower_Energy << " " << hghtfi << endl;
        
        // cout << "LogEPCR, MeanEne " << epcr << " " << mlge << endl;
 
@@ -418,7 +423,7 @@ void mclustg::Loop()
 // =========================================================================
        cmult = 1;
        icshow = 0;
-       particle__ = 100;  //-
+       particle__ = 20;  //-
        nsecp = particle__;  // nb. secondary part. in shower
     
        // Look for the fastest particle in the shower
@@ -432,8 +437,6 @@ void mclustg::Loop()
    
    // First loop in  all particles ===================
    for(Int_t ip=0; ip < particle__; ip++){
-       
-       //cout << " Punto 3" << endl;
        
        pid = particle__ParticleID[ip];
        
@@ -455,7 +458,7 @@ void mclustg::Loop()
        
        irow = int((rx - lminx)/cellw);
        icol = int((ry - lminy)/cellw);
-       
+              
        if (irow<0 | icol<0 | irow+1>nbox | icol+1>nbox){
            itag[ip]++;
            continue;
@@ -463,6 +466,7 @@ void mclustg::Loop()
        
        icont++;     // nb of particles
        nasep++;  // nb. of accepted secondaries
+       pgrid[ishow][icol][irow]++;
        idia = int((rgrid[irow][icol] - lmind)/celdw);
        rpart[idia]++;
        
@@ -635,7 +639,8 @@ void mclustg::Loop()
        for(Int_t isp=ifp+1; isp < nsecp; isp++){
            
            if(itag[isp]!=-1) continue;
-
+           
+           idp2 = arr0[isp];
            x2   = arr1[isp] ;
            y2   = arr2[isp] ;
            irows = int((x2 - lminx)/cellw);
@@ -644,27 +649,22 @@ void mclustg::Loop()
            if( irows == irow && icols == icol){   // new particle in the cell
                
                if (cmult==1) {
+                   itag[isp]++;
                    idclus = idp1;
                    iclust ++;
                    icshow ++;
-                   itag[isp]++;
-                   cgrid[ishow][irow][icol] = idclus;
+                   //cgrid[ishow][irow][icol]= idclus;
+                   cgrid[ishow][irow][icol]++;                   
                    idia = int((rgrid[irow][icol] - lmind)/celdw);
                    rclst[idia]++;
                }
                
                itag[isp]++;
                cmult++;
-               rclst[idia]++;
-               
-               //cout << " ****** iclust, irow, icol, cmult: " << iclust+1 << " " << irow  << " " << icol << " " << cmult << endl;
-               //cout << endl;
-
-               idp2   = arr0[isp];
+               idclus = idclus + idp2;
+               //rclst[idia]++;
                
                //cout << "  ifp, isp, idp1, idp2: " << ifp << " " << isp << " " << idp1<< " " << idp2 << endl;
-               
-               idclus = idclus + idp2;
                
                t2 = arr3[isp];    pm2  = arr4[isp];
                zen2 = arr5[isp];  azh2 = arr6[isp];
@@ -673,9 +673,7 @@ void mclustg::Loop()
                    xf = x2; yf = y2; tfst = t2;
                    zhf = zen2; azf = azh2;
                    pidfst = idp2;
-
                }
-               
                if(t2>tlst){
                    xl = x2; yf = y2; tlst = t2;
                    zhl = zen2; azl = azh2;
@@ -745,9 +743,6 @@ void mclustg::Loop()
                        pmlstm = pm2, zhlstm = zen2; azlstm = azh2;
                    }
                }
-               
-               // Calculo del nuevo centro del cluster y su anchura
-               // Formulas recursivas del valor medio y la dispersion
                               
            }  // ends adding particle to the cluster
            
@@ -756,18 +751,18 @@ void mclustg::Loop()
            
        }  //  End of isp for;
        
-       if (cmult > 1){      //  New cluster properties
+       if (cmult > 1){      //  New cluster found
            
            // cout << " ****** iclust, irow, icol, cmult: " << iclust << " " << irow  << " " << icol << " " << cmult << endl;
            //cout << "---irow, icol, idclus: " << irow << " " << icol << " " << idclus << endl;
-           cgrid[ishow][irow][icol] = idclus;
-           tidclus = tidclus + idclus;  // suma logica de los clusters en el shower
+           //cgrid[ishow][irow][icol] = idclus;
+           tidclus = tidclus + idclus; // suma logica de todos los clusters en el shower
            
            // Clasificamos el cluster . Ignoramos las particulas pesadas
        
            if (neclst>1 && nmclst ==0 ){   // clean EM cluster with >1 electron
                sidclst = 1;
-               cgride[ishow][irow][icol]++;
+               //cgride[ishow][irow][icol]++;
                rclte[idia]++;
                iclems ++;
                iclemt ++;
@@ -776,7 +771,7 @@ void mclustg::Loop()
            }
            else if (nmclst > 1 && neclst == 0){   //  cluster with >1 muons
                sidclst = 2;
-               cgridm[ishow][irow][icol]++;
+               //cgridm[ishow][irow][icol]++;
                rcltm[idia]++;
                iclmus ++;
                iclmut ++;
@@ -785,7 +780,7 @@ void mclustg::Loop()
            }
            else if (neclst>0 && nmclst>0) {          // mixt cluster with e's & mu's
                sidclst = 3;
-               cgridx[ishow][irow][icol]++;
+               //cgridx[ishow][irow][icol]++;
                rcltx[idia]++;
                iclmxs ++;
                iclmxt ++;
@@ -828,7 +823,7 @@ void mclustg::Loop()
            cout << endl;
            */
            
-           /*
+           //*
            ofclst << mpcr << "\t"
               << epcr   << "\t"
               << zhpcr  << "\t"
@@ -869,7 +864,7 @@ void mclustg::Loop()
               << pmlstm << "\t"
               << distfl << "\t"
               << angfl  << endl;
-              */
+              //*/
            
        }  // endif cmult > 1:  new cluster
                
@@ -911,7 +906,6 @@ void mclustg::Loop()
        
        if (neles==0){neles=-1;}
        
-   /*
    ofshws
       << mpcr << "\t"
       << epcr   << "\t"
@@ -944,7 +938,6 @@ void mclustg::Loop()
       << nel500  << "\t"
       << nel1000 << "\t"
       << nel2000 << endl;
-    */
 
      // cout << "SigREls - SigRMus" << sigre << "  " << sigrm << endl;
    
@@ -963,24 +956,21 @@ void mclustg::Loop()
        
      // cout << " ishow, nsecp " << ishow << "   " << nsecp  << endl;
        
-     Int_t inte=0, res[nbox][nbox];
+     //Int_t inte=0, res[nbox][nbox];
 
-    //*
      ofpgrd << ishow+1 << "\t" << nbox << "\t" ;
      ofcgrd << ishow+1 << "\t" << nbox << "\t" ;
-     for (Int_t col=0; col<nbox; col++){
-        for (Int_t row=0; row<nbox; row++){
-            // cout<<"pgrid["<< ishow<<"]["<<row<<"]["<<col<<"]="<<pgrid[ishow][row][col] <<endl;
+     for (Int_t row=0; row<nbox; row++){
+        for (Int_t col=0; col<nbox; col++){
+            //cout<<"cgrid["<< ishow<<"]["<<row<<"]["<<col<<"]="<<cgrid[ishow][row][col] <<endl;
             ofpgrd << pgrid[ishow][row][col] << "\t";
             ofcgrd << cgrid[ishow][row][col] << "\t";
-            inte = inte + pgrid[ishow][row][col];
+            //inte = inte + pgrid[ishow][row][col];
         }
      }
-    //*/
-        
-        ofpgrd << endl;
-        ofcgrd << endl;
-        
+    ofpgrd << endl;
+    ofcgrd << endl;
+    
         /*
         for (Int_t col=0; col<nbox; col++){
            for (Int_t row=0; row<nbox; row++){
@@ -1070,21 +1060,19 @@ ofpart<< mpcr  << "\t"
     << ntel500  << "\t"
     << ntel1000 << "\t"
     << ntel2000 << endl;
-    
-    cout << endl;
-    printf("******  Proceso completado  ******");
+
     ofclst.close();
-    cout << endl;
     ofshws.close();
-    cout << endl;
     ofpart.close();
+    
+    printf("******  Proceso completado  ******");
     cout << endl;
-        
+    
     cout << " - Parametros iniciales. MxDist - MxSigr: " << distmx << "  " << sigrmx << endl;
     cout << "* NShowers: " << nshow << endl;
     //cout << endl;
     cout << "* Numero total de secundarios: " << ntsep << endl;
-    cout << "* Numero total aceptados: " << nasep << endl;
+    cout << "* Numero total aceptados: " << nasep << " / "<< 100 * nasep/ntsep << " %" <<endl;
     cout << "* Contador (gemnpo): " << ntgam << " " << ntele << " " << ntmu <<  " " << ntn <<  " " << ntp <<  " " << ntoth << endl;
     cout << "* Distribucion/% (gemnpo): " << 100*ntgam/ntsep << " " << 100*ntele/ntsep << " " << 100*ntmu/ntsep <<  " " << 100*ntn/ntsep <<  " " << 100*ntp/ntsep <<  " " << 100*ntoth/ntsep << endl;
     cout << "* NParticulas/shower (gemnpo): " << ntgam/nshow << " " << ntele/nshow << " " << ntmu/nshow <<  " " << ntn/nshow <<  " " << ntp/nshow <<  " " << ntoth/nshow << endl;
