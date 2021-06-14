@@ -1,7 +1,5 @@
 //Programa muy robusto. ANALISIS DE CLUSTERS. Identificacion de particulas a menos de una cierta distancia entre ellas.
 // Programa para datos con alturas fijas
-// Elige los clusters a traves de una cuadricula de tamaño variable
-
 
 #define mclustg_cxx
 #include "mclustg.h"
@@ -115,7 +113,7 @@ void mclustg::Loop()
     //  5 6      mu- mu+
     //  13 14    n p
 // ================================================================================
-    Int_t   ncont=0, n=0, nsecp=0, nasep=0, icont=0, ntsep=0;
+    Int_t   ncont=0, n=0, nsecp, nasep, icont=0, ntsep=0;
     Int_t   tag=-1, icshow, iclust=0, cmult, cmultp1,
             iclems=0, iclmus=0, iclmxs=0, iclots=0,    // cluster count in showers
             iclemt=0, iclmut=0, iclmxt=0, iclott=0;    // total cluster count

@@ -1,9 +1,7 @@
 // mclusters.C  Nuevo codigo basado en dat6_0 para construir clusters con todo tipo de particulas y con informacion mas precisa: tiempos y energias separados para electrones y muones.
-// !!!!!
+// !!!!! Valido para simulaciones sin fijar la altura
 // JAG.Ene.21. Intento de redefinir los clusters con todas las particulas y separando componente electronica y muonica.
-//Programa muy robusto. ANALISIS DE MULTIPLICIDAD. Identificacion de particulas a menos de 1 metro de radio entre ellas. Con este programa queremos conocer los efectos sitematicos existente en la cascada.
-//Metodo recursivo para valores n muy grandes, para un unico valor no funciona..
-// Posible metodo utilizar los array y si son excesivamente grandes pasarse al metodo recursivo
+//Programa muy robusto. ANALISIS DE MULTIPLICIDAD. Identificacion de particulas a menos de una cierta distancia entre ellas. Con este programa queremos conocer los efectos sitematicos existente en la cascada.
 
 #define mclusters_cxx
 #include "mclusters.h"
@@ -71,12 +69,19 @@ void mclusters::Loop()
 
     if (fChain == 0) return;
 
+    Long64_t nshow = fChain->GetEntriesFast();
+    cout << " - nShowers in file: " << nshow << endl;
+    nshow = 1;   //-
+    cout << " - nShowers analized: " << nshow << endl;
+    cout << endl;
+ 
     Long64_t nshows = fChain->GetEntriesFast();
     Long64_t nbytes = 0, nb = 0;
     Long64_t fbytes = 0, fb = 0;
     Long64_t pbytes = 0, pb = 0;
     Long64_t hbytes = 0, hb = 0;
     Long64_t tbytes = 0, tb = 0;
+    
     // Identificadores de particulas en Corsika:
     //  1        gammas
     //  2 3      e- e+
@@ -171,8 +176,8 @@ void mclusters::Loop()
         "NClstS"  << "\t" <<
         "NGamS"   << "\t" <<
         "NeleS"   << "\t" <<
-        "%50MV"  << "\t" <<
-        "%70MV"  << "\t" <<
+        "%50MV"   << "\t" <<
+        "%70MV"   << "\t" <<
         "%100MV"  << "\t" <<
         "%150MV"  << "\t" <<
         "%250MV"  << "\t" <<
@@ -187,7 +192,6 @@ void mclusters::Loop()
         "NClMxS"  << "\t" <<
         "NClOtS"  << endl;
 // ********************************************************************************
- nshows = 1;   //-
     
    for (Long64_t ishow=0; ishow<nshows; ishow++) {     // Loop in showers
        
@@ -197,7 +201,7 @@ void mclusters::Loop()
        
        icont = -1;   // index for total nb. of secondaries
        Long64_t itree = LoadTree(ishow);
-
+       
        if (itree < 0) break;
 
        nb = fChain->GetEntry(itree);   nbytes += nb;
@@ -217,13 +221,15 @@ void mclusters::Loop()
        Float_t arr5[100000] = { [0 ... 99999] = -10. };
        Float_t arr6[100000] = { [0 ... 99999] = -10. };
        Float_t itag[100000] = { [0 ... 99999] =  -1. };
-       Float_t mshow[nshows][14];
+       //Float_t mshow[nshows][14];
        
        // First loop in particles
        cmult = 1;
        icshow = 0;
-       particle__ = 100;  //-
+       // particle__ = 10;  //-
        nsecp = particle__;  // nb. secondary part. in shower
+       
+       // cout << " nsecp " << nsecp << endl;
        
        // Look for the fastest particle in the shower
        t0 = 1000000;
@@ -252,6 +258,7 @@ void mclusters::Loop()
            phi       = atan2(py,px); // * rad2g;
            
            pid = particle__ParticleID[ip];
+
    //      Select type of particle
            if(pid==1){ // GAMMAS
                idp = idgam;
@@ -539,7 +546,7 @@ void mclusters::Loop()
                tidclus = tidclus + idclus;  // suma logica de los clusters en el shower
                
                // Clasificamos el cluster . Ignoramos las particulas pesadas
-           
+               
                if (idclus < idmu && neclst > 1){   // clean EM cluster with >1 electron
                    sidclst = 1;
                    iclems ++;
@@ -675,23 +682,10 @@ void mclusters::Loop()
            cout << "* Distribucion relativa/%: " << 100*ngams/nsecp << " " << 100*neles/nsecp << " " << 100*nmus/nsecp <<  " " << 100*nns/nsecp <<  " " << 100*nps/nsecp <<  " " << 100*nots/nsecp << endl;
        cout << endl;
        */
-       mshow[ishow][0]= nsecp;
-       mshow[ishow][1]= icshow;
-       mshow[ishow][2]= ngams;
-       mshow[ishow][3]= neles;
-       mshow[ishow][4]= sigre;
-       mshow[ishow][5]= nmus;
-       mshow[ishow][6]= sigrm;
-       mshow[ishow][7]= nns;
-       mshow[ishow][8]= nps;
-       mshow[ishow][9]= ntoth;
-       mshow[ishow][10]= iclems;
-       mshow[ishow][11]= iclmus;
-       mshow[ishow][12]= iclmxs;
-       mshow[ishow][13]= iclots;
        
+       if (neles==0){neles =-1;}
        //*
-       file2<<ishow+1<< "\t"
+       file2 <<ishow+1<< "\t"
           << nsecp   << "\t"
           << icshow  << "\t"
           << ngams   << "\t"
@@ -735,11 +729,12 @@ void mclusters::Loop()
     }
      */
     
+cout << endl;
 printf("******  Proceso completado  ******");
 file1.close();
-cout << endl;
 file2.close();
-cout << endl;
+    
+    if (ntsep==0){ntsep=-1;}
     
 cout << " - Parametros iniciales. DistMx - SigrMx: " << distmx << "  " << sigrmx << endl;
 cout << "* NShowers: " << nshows << endl;

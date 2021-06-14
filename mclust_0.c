@@ -1,10 +1,12 @@
-//  mclusth.C  Analisis de clusters con interaccion en diferentes alturas
-//Programa muy robusto. ANALISIS DE CLUSTERS. Identificacion de particulas a menos de una cierta distancia entre ellas.
-// Programa para datos con alturas fijas
-// Elige los clusters mediante el algoritmo iterativo puesto a punto por Yanis
+// mclust.C
+// Nueva version basada en mclusters.C para estudio general de clusters a distinta altura y diferentes masas. Incorporadas algunas de las opciones de mclusth y mclustg
+//
+// !!!!! Valido para simulaciones sin fijar la altura
+// JAG.Ene.21. Intento de redefinir los clusters con todas las particulas y separando componente electronica y muonica.
+//Programa muy robusto. ANALISIS DE MULTIPLICIDAD. Identificacion de particulas a menos de una cierta distancia entre ellas. Con este programa queremos conocer los efectos sitematicos existente en la cascada.
 
-#define mclusth_cxx
-#include "mclusth.h"
+#define mclust_cxx
+#include "mclust.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
@@ -36,13 +38,12 @@
 //#define fout1 "soclst_p_02_15km.txt" //   cluster output summary
 //#define fout2 "soshws_p_02_15km.txt" //   shower output summary
 //#define fout3 "sopart_p_02_15km.txt" //   particle output summary
-#define fout1 "clstsum.txt" //
-#define fout2 "showsum.txt" //
-#define fout3 "partsum.txt" //
+#define fout1 "xmclust_cls.txt" //
+#define fout2 "xmclust_shs.txt" //
+#define fout3 "xmclust_prs.txt" //
 
-void mclusth::Loop()
+void mclust::Loop()
 {
-    
 // Analisis de cascadas atmosfericas de rayos cosmicos
 /*
  *
@@ -53,31 +54,12 @@ void mclusth::Loop()
  *  Modified by JAGarzon on Apr.2021 for cluster analysis
 */
 
-//   In a ROOT session, you can do:
-//      root> .L mclusth.C
-//      root> mclusth t
-//      root> t.GetEntry(12); // Fill t data members with entry number 12
-//      root> t.Show();       // Show values of entry 12
-//      root> t.Show(16);     // Read and show values of entry 16
-//      root> t.Loop();       // Loop on all entries
-//
-//     This is the loop skeleton where:
-//    jentry is the global entry number in the chain
-//    ientry is the entry number in the current Tree
-//    Note that the argument to GetEntry must be:
-//    jentry for TChain::GetEntry
-//    ientry for TTree::GetEntry and TBranch::GetEntry
-//
-//       To read only selected branches, Insert statements like:
-// METHOD1:
-//    fChain->SetBranchStatus("*",0);  // disable all branches
-//    fChain->SetBranchStatus("branchname",1);  // activate branchname
-// METHOD2: replace line
-//    fChain->GetEntry(jentry);       //read all branches
-//by  b_branchname->GetEntry(ientry); //read only this branch
    if (fChain == 0) return;
-
+    
    Long64_t nshows = fChain->GetEntriesFast();
+   cout << " nShower in file: " << nshows << endl;
+   //nshows = 1;   //-
+   cout << " nShowers analyzed " << nshows << endl;
 
    Long64_t nbytes = 0, nb = 0;
    Long64_t fbytes = 0, fb = 0;
@@ -94,7 +76,7 @@ void mclusth::Loop()
     Int_t   tag=-1, icshow, iclust=0, cmult, cmultp1,
             iclems=0, iclmus=0, iclmxs=0, iclots=0,    // cluster count in showers
             iclemt=0, iclmut=0, iclmxt=0, iclott=0;    // total cluster count
-    Int_t   pid, idp1, idp2, pidfst, pidlst;
+    Int_t   pid, idp1, idp2, idpf, idpl;
     Int_t   ngam=0, nele=0, nmu=0, nn=0, np=0, noth=0, ngclst =0, neclst=0, nmclst=0;
     Int_t   nel50=0, nel100=0, nel150=0, nel200=0, nel300=0,
     nel500, nel1000, nel2000;
@@ -104,20 +86,21 @@ void mclusth::Loop()
     Int_t   ngams=0, neles=0, nmus=0, nns=0, nps=0, nots=0;
     Int_t   ifg, ife=0, ifm=0;
     Long64_t idgam=1, idele=1000, idmu=1000000, idn=100000000, ido=100000000;
-    Long64_t idp=0, id1=0, id2= 0, idclus=0, sidclst=0, tidclus=0;
+    Long64_t idp=0, idclus=0, sidclst=0, tidclus=0;
     Float_t rx, ry, dx, dy, x1, x2, y1, y2, r, rsq,
-            xf=0, xl=0, yf=0, yl=0, distfl=0, angfl=0,
+            xf=0, xl=0, yf=0, yl=0, dcc=0, dtc=0, dac=0,
             xfe=0, xle=0, yfe=0, yle=0,
             xfm=0, xlm=0, yfm=0, ylm=0;
-    Float_t theta=0., zen1=0., zen2=0., phi=0, azh1=0, azh2=0;
+    Float_t azh=0., zen1=0., zen2=0., aza=0, azh1=0, azh2=0;
     Float_t time =0., t0, t1=0., t2=0.,
-            tfst, tlst, tfstg=0, tlstg=0, tfste=0, tlste=0, tfstm=0, tlstm=0,
+            tf, tl, tfg=0, tlg=0, tfe=0, tle=0, tfm=0, tlm=0,
             zhf=0, zhl=0, azf=0, azl=0,
-            zhfste=0, zhlste=0, zhfstm=0, zhlstm=0,
-            azfste=0, azlste=0, azfstm=0, azlstm=0;
+            zhfe=0, zhle=0, zhfm=0, zhlm=0,
+            azfe=0, azle=0, azfm=0, azlm=0;
+    //Float_t tfc=0, tlc=0, zhfc=0, zhlc=0, azfc=0, azlc=0;
     Float_t px=0, py=0, pz=0, pt=0, px1=0, py1=0, pz1=0, px2=0, py2=0, pz2=0,
             pmod, pm1, pm2, psq,
-            pmfste, pmlste, pmfstm, pmlstm; // particle momenta
+            pmfe, pmle, pmfm, pmlm; // particle momenta
     Float_t dxsq, dysq, drsq, dr, sigr=0;
     Float_t xolde=0, xolesq=0, xmeane=0, xmnesq=0, sgxesq=0, sigre =0;
     Float_t yolde=0, yolesq=0, ymeane=0, ymnesq=0, sgyesq=0;
@@ -129,12 +112,18 @@ void mclusth::Loop()
     Float_t nxf, nyf, nzf, nxl, nyl, nzl;
     Float_t hghtfi, mnhgt=0;  // first height, mean hght
     Float_t emin, emax, gm1, flint;   // energy limits, spindex-1, flux integral
+    Int_t ndist=8, ndelt=6, ndang=6, iner=0, idelt=0, idang=0;
+    Int_t vdccem[ndist], vdccmu[ndist], vdccmx[ndist],
+            vdtcem[ndelt], vdtcmu[ndelt], vdtcmx[ndelt],
+            vdacem[ndang], vdacmu[ndang], vdacmx[ndang];
+    Int_t id1=50, id2=100, id3=150, id4=200, id5=300, id6=500, id7=1000;
+    Int_t it1=1, it2= 3, it3 = 6, it4=20, it5=40;
+    Int_t ia1=2, ia2= 5, ia3 = 9, ia4=15, ia5=25;
+    Int_t mclem[ndist][ndelt][ndang], mclmu[ndist][ndelt][ndang], mclmx[ndist][ndelt][ndang];
     Float_t rad2g;
     rad2g = 180/TMath::Pi();
-    
     Float_t epcr, dene=0.25, mepcr=0;
     
-
     fstream file1;
     fstream file2;
     fstream file3;
@@ -148,18 +137,17 @@ void mclusth::Loop()
 
     file1 <<
     "#PrCR"    << "\t" <<
-    "EnePCR"    << "\t" <<
-    "ZthPCR"    << "\t" <<
-    "HghPCR"    << "\t" <<
-    "IShow"     << "\t" <<
-    "IClust"    << "\t" <<
+    "EnePCR"   << "\t" <<
+    "HghPCR"   << "\t" <<
+    "IShow"    << "\t" <<
+    "IClust"   << "\t" <<
     "IdClst"   << "\t" <<
     "SIdClt"   << "\t" <<    // Short ID of cluster
     "NparCt"   << "\t" <<
     "NelClt"   << "\t" <<
     "NmuClt"   << "\t" <<
-    "PidFPr"   << "\t" <<
-    "PidLPr"   << "\t" <<
+    "idpfPr"   << "\t" <<
+    "idplPr"   << "\t" <<
     "XmClst"   << "\t" <<
     "YmClst"   << "\t" <<
     "RadWCt"   << "\t" <<
@@ -167,29 +155,28 @@ void mclusth::Loop()
     "TlClst"   << "\t" <<
     "TmClst"   << "\t" <<
     "sTClst"   << "\t" <<
-    "TFstEl"   << "\t" <<
-    "TLstEl"    << "\t" <<
+    "tfel"   << "\t" <<
+    "tlel"   << "\t" <<
     "ZhFstE"   << "\t" <<
     "AzFstE"   << "\t" <<
     "ZhLstE"   << "\t" <<
     "AzlstE"   << "\t" <<
     "PmFstE"   << "\t" <<
-    "PmstE"   << "\t" <<
-    "TFrstM"    << "\t" <<
-    "TLastM"    << "\t" <<
+    "PmstE"    << "\t" <<
+    "TFrstM"   << "\t" <<
+    "TLastM"   << "\t" <<
     "ZhfstM"   << "\t" <<
     "AzfstM"   << "\t" <<
     "ZhlstM"   << "\t" <<
     "AzlstM"   << "\t" <<
     "PmFstM"   << "\t" <<
     "PmLstM"   << "\t" <<
-    "DistFL"   << "\t" <<
-    "AnglFL"   << endl;
+    "dcc"   << "\t" <<
+    "dac/º"  << endl;
 
     file2 <<
     "#PrimCR" << "\t" <<
     "EnePCR"  << "\t" <<
-    "ZthPCR"  << "\t" <<
     "HghPCR"  << "\t" <<
     "IShow"   << "\t" <<
     "NSPar"   << "\t" <<
@@ -218,8 +205,7 @@ void mclusth::Loop()
     file3 <<
     "#PrimCR"  << "\t" <<
     "EnePCR"   << "\t" <<
-    "ZthPCR"   << "\t" <<
-    "HghPCR"   << "\t" <<
+    "MnHPCR"   << "\t" <<
     "NShow"    << "\t" <<
     "NtSePs"   << "\t" <<
     "NtClts"   << "\t" <<
@@ -241,10 +227,23 @@ void mclusth::Loop()
     "Nte500"   << "\t" <<
     "Ntel1K"   << "\t" <<
     "Ntel2K"   <<endl ;
-
+    
+    for (Int_t ie=0; ie<ndist; ie++)
+        for (Int_t it=0; it<ndelt; it++)
+            for (Int_t ia=0; ia< ndang; ia++)
+    {
+        mclem[ie][it][ia]=0;
+        mclmu[ie][it][ia]=0;
+        mclmx[ie][it][ia]=0;
+    }
+    
+    for (Int_t ie=0; ie<ndist; ie++){
+        vdccem[ie]=0; vdccmu[ie]=0; vdccmx[ie]=0;}
+    for (Int_t it=0; it<ndelt; it++){
+        vdtcem[it]=0; vdtcmu[it]=0; vdtcmx[it]=0;}
+    for (Int_t ia=0; ia< ndang; ia++){
+        vdacem[ia]=0; vdacmu[ia]=0; vdacmx[ia]=0;}
 // *******************************************************************************
-//nshows = 1;   //-
-// cout << "nshows " << nshows << endl;
     
    for (Long64_t ishow=0; ishow<nshows; ishow++) {
 
@@ -311,8 +310,8 @@ void mclusth::Loop()
        pmod      = sqrt(psq);
        //pt        = ((px*y)-(py*x))/(r*psq); ???
        pt        = sqrt(px*px + py*py);
-       theta     = acos(pz/pmod); // * rad2g;
-       phi       = atan2(py,px); // * rad2g;
+       azh     = acos(pz/pmod); // * rad2g;
+       aza       = atan2(py,px); // * rad2g;
        
        pid = particle__ParticleID[ip];
        
@@ -412,15 +411,15 @@ void mclusth::Loop()
        arr2[icont] = ry;
        arr3[icont] = time;
        arr4[icont] = pmod;
-       arr5[icont] = theta;
-       arr6[icont] = phi;
+       arr5[icont] = azh;
+       arr6[icont] = aza;
        
    //}
    }    // end of first scan of particles
-       
+
    ntsep  = ntsep + nsecp;   // total nb. secondary part.
           
-   // Loop in the first particle
+   // ===================    Second loop in the first particle
    for(Int_t ifp=0; ifp<nsecp; ifp++){
 
        //cout << endl;
@@ -440,48 +439,48 @@ void mclusth::Loop()
        
        xf = x1; xl = x1; yf = y1; yl = y1; xmean = x1; ymean = y1;
        zhf = zen1; zhl = zen1; azf = azh1; azl = azh1;
-       tfst = t1; tlst = t1; tmean = t1; sigt=0; sigr = 0;
-       pidfst = idp1; pidlst = idp1;
+       tf = t1; tl = t1; tmean = t1; sigt=0; sigr = 0;
+       idpf = idp1; idpl = idp1;
        
        if(idp1 == idgam){        // gamma
            ngclst++;
            ifg = 1;
-           tfstg = t1;
-           tlstg = t1;
+           tfg = t1;
+           tlg = t1;
        }
        
        if(idp1 == idele){        // electron
            neclst++;
            ife = 1;
-           xfe     = x1;
-           xle     = x1;
-           yfe     = y1;
-           yle     = y1;
-           tfste   = t1;
-           tlste   = t1;
-           pmfste  = pm1;
-           pmlste  = pm1;
-           zhfste  = zen1;
-           zhlste  = zen1;
-           azfste  = azh1;
-           azlste  = azh1;
+           xfe   = x1;
+           xle   = x1;
+           yfe   = y1;
+           yle   = y1;
+           tfe   = t1;
+           tle   = t1;
+           pmfe  = pm1;
+           pmle  = pm1;
+           zhfe  = zen1;
+           zhle  = zen1;
+           azfe  = azh1;
+           azle  = azh1;
        }
        
        if(idp1 == idmu){      // muon
            nmclst++;
            ifm = 1;
-           xfm     = x1;
-           xlm     = x1;
-           yfm     = y1;
-           ylm     = y1;
-           tfstm   = t1;
-           tlstm   = t1;
-           pmfstm  = pm1;
-           pmlstm  = pm1;
-           zhfstm  = zen1;
-           zhlstm  = zen1;
-           azfstm  = azh1;
-           azlstm  = azh1;
+           xfm   = x1;
+           xlm   = x1;
+           yfm   = y1;
+           ylm   = y1;
+           tfm   = t1;
+           tlm   = t1;
+           pmfm  = pm1;
+           pmlm  = pm1;
+           zhfm  = zen1;
+           zhlm  = zen1;
+           azfm  = azh1;
+           azlm  = azh1;
        }
                   
        itag[ifp]++;
@@ -497,13 +496,12 @@ void mclusth::Loop()
            dy   = arr2[isp] - ymean; dysq = dy * dy ;
            drsq = dxsq + dysq; dr = sqrt(drsq);
        
-           // new cluster and new particle
-           if( dr <= distmx && sigr <= sigrmx){
+           // ==================================== fills cluster
+           
+           if(dr <= distmx && sigr <= sigrmx){
                
                if(cmult==1){idclus = idp1;}
-               
-                // cout << "   * new cluster: tag  " << tag << endl;
-               
+               // cout << "   * new cluster: tag  " << tag << endl;
                tag++;   // cluster found
                cmult++;
                
@@ -513,80 +511,71 @@ void mclusth::Loop()
                pm2  = arr4[isp];
                zen2 = arr5[isp]; azh2 = arr6[isp];
                
-               if(t2<tfst){
-                   xf = x2; yf = y2; tfst = t2;
+               if(t2<tf){
+                   tf = t2; xf = x2; yf = y2;
                    zhf = zen2; azf = azh2;
-                   pidfst = idp2;
-
+                   idpf = idp2;
                }
                
-               if(t2>tlst){
-                   xl = x2; yf = y2; tlst = t2;
+               if(t2>tl){
+                   tl  = t2; xl = x2; yf = y2;
                    zhl = zen2; azl = azh2;
-                   pidlst = idp2;
+                   idpl = idp2;
                }
-            
+                   
+               nxf = sin(zhf) * cos(azf) ;
+               nyf = sin(zhf) * sin(azf) ;
+               nzf = cos(zhf);
+               nxl = sin(zhl) * cos(azl) ;
+               nyl = sin(zhl) * sin(azl) ;
+               nzl = cos(zhl);
+               dac = acos(nxf*nxl + nyf*nyl + nzf*nzl) * rad2g;
+               dcc = sqrt(((xl-xf)*(xl-xf) + (yl-yf)*(yl-yf))/2);
+               dtc = tl - tf;
+
                if(idp2 == idgam){         // gamma
                    ngclst++;
                    if(ifg==0){
-                       tfstg   = t2;
-                       tlstg   = t2;
+                       tfg = t2;
+                       tlg = t2;
                        ifg = 1;
                    }
-                   if(t2<tfstg){ tfstg  = t2;}
-                   if(t2>tlstg){ tlstg  = t2;}
+                   if(t2<tfg){ tfg = t2;}
+                   if(t2>tlg){ tlg = t2;}
                }
                if(idp2 == idele){        // electron
                    neclst++;
                    if(ife==0){
-                       xfe     = x2;
-                       xle     = x2;
-                       yfe     = y2;
-                       yle     = y2;
-                       tfste   = t2;
-                       tlste   = t2;
-                       pmfste  = pm2;
-                       pmlste  = pm2;
-                       zhfste  = zen2;
-                       zhlste  = zen2;
-                       azfste  = azh2;
-                       azlste  = azh2;
+                       xfe = x2; xle = x2; yfe = y2; yle = y2;
+                       tfe = t2; tle = t2; pmfe = pm2; pmle = pm2;
+                       zhfe= zen2; zhle = zen2; azfe = azh2; azle  = azh2;
                        ife = 1;
                    }
-                   if(t2<tfste){
-                       xfe   = x2; yfe = y2; tfste = t2;
-                       pmfste = pm2; zhfste = zen2; azfste = azh2;
+                   if(t2<tfe){
+                       xfe = x2; yfe = y2; tfe = t2;
+                       pmfe = pm2; zhfe = zen2; azfe = azh2;
                    }
-                   if(t2>tlste){
-                       xle    = x2; yle = y2; tlste = t2;
-                       pmlste = pm2; zhlste = zen2; azlste = azh2;
+                   if(t2>tle){
+                       xle    = x2; yle = y2; tle = t2;
+                       pmle = pm2; zhle = zen2; azle = azh2;
                    }
                }
                if(idp2 == idmu){      // muon
                    nmclst++;
                    if(ifm == 0){
-                       xfm     = x2;
-                       xlm     = x2;
-                       yfm     = y2;
-                       ylm     = y2;
-                       tfstm   = t2;
-                       tlstm   = t2;
-                       pmfstm  = pm2;
-                       pmlstm  = pm2;
-                       zhfstm  = zen2;
-                       zhlstm  = zen2;
-                       azfstm  = azh2;
-                       azlstm  = azh2;
+                       xfm = x2; xlm = x2; yfm = y2; ylm = y2;
+                       tfm = t2; tlm = t2; pmfm = pm2; pmlm = pm2;
+                       zhfm = zen2; zhlm = zen2; azfm = azh2; azlm = azh2;
                        ifm = 1;
                    }
-                   if(t2<tfstm){
-                       xfm    = x2; yfm = y2; tfstm = t2;
-                       pmfstm = pm2, zhfstm = zen2; azfstm = azh2;
+                   if(t2<tfm){
+                       tfm = t2; xfm = x2; yfm = y2;
+                       pmfm = pm2, zhfm = zen2; azfm = azh2;
                    }
                    
-                   if(t2>tlstm){
-                       xlm    = x2; ylm = y2; tlstm = t2;
-                       pmlstm = pm2, zhlstm = zen2; azlstm = azh2;
+                   if(t2>tlm){
+                       tlm = t2; xlm = x2; ylm = y2;
+                       pmlm = pm2, zhlm = zen2; azlm = azh2;
                    }
                }
                
@@ -602,6 +591,7 @@ void mclusth::Loop()
                xmean   = xmean + (x2 - xmean)/cmult;
                ymean   = ymean + (y2 - ymean)/cmult;
                tmean   = tmean + (t2 - tmean)/cmult;
+               dcc   = sqrt((xmean*xmean + ymean*ymean)/2);
                xmeansq = xmean * xmean;
                ymeansq = ymean * ymean;
                tmeansq = tmean * tmean;
@@ -615,81 +605,147 @@ void mclusth::Loop()
                sigr   = sqrt((sigxsq + sigysq)/2) ;
                
            }  // ends adding particle to the cluster
-           
            // cout << " * lab cmult " << tag << " " << cmult << endl;
-           
+               
            itag[isp] = tag;
            tag       = -1;
-       }  //  End of isp for;
-
-       if (cmult > 1){      //  New cluster found
+            
+           
+       } //  End of isp for;
+           
+       //*
+       if (cmult > 1){      //  ======== Stores new cluster
            iclust++;
            icshow ++;
            tidclus = tidclus + idclus;  // suma logica de los clusters en el shower
            
            // Clasificamos el cluster . Ignoramos las particulas pesadas
+           
+           //cout << "dcc, dtc, dac " << dcc << " " << dtc << " " << dac << endl;
        
-           if (idclus < idmu && neclst > 1){   // clean EM cluster with >1 electron
+           if (idclus < idmu && neclst > 1){   // clean EM cluster with >1 electron and no heavy particles
                sidclst = 1;
                iclems ++;
                iclemt ++;
                xf = xfe; yf = yfe; xl = xle; yl = yle;
-               zhf = zhfste; zhl = zhlste; azf = azfste; azl = azlste;
+               tf = tfe; tl = tle;
+               zhf = zhfe; zhl = zhle; azf = azfe; azl = azle;
+               
+               if (dcc < id1){mclem[0][0][0]++;}
+               else if (dcc>id1 && dcc<id2){mclem[1][0][0]++;}
+               else if (dcc>id2 && dcc<id3){mclem[2][0][0]++;}
+               else if (dcc>id3 && dcc<id4){mclem[3][0][0]++;}
+               else if (dcc>id4 && dcc<id5){mclem[4][0][0]++;}
+               else if (dcc>id5 && dcc<id6){mclem[5][0][0]++;}
+               else if (dcc>id6 && dcc<id7){mclem[6][0][0]++;}
+               else {mclem[7][0][0]++;}
+               
+               if (dtc < it1){vdtcem[0] ++;}
+               else if (dtc> it1 && dtc<it2){vdtcem[1]++;}
+               else if (dtc> it2 && dtc<it3){vdtcem[2]++;}
+               else if (dtc> it3 && dtc<it4){vdtcem[3]++;}
+               else if (dtc> it4 && dtc<it5){vdtcem[4]++;}
+               else {vdtcem[5]++;}
+               
+               if (dac < ia1){vdacem[0] ++;}
+               else if (dac> ia1 && dac<ia2){vdacem[1]++;}
+               else if (dac> ia2 && dac<ia3){vdacem[2]++;}
+               else if (dac> ia3 && dac<ia4){vdacem[3]++;}
+               else if (dac> ia4 && dac<ia5){vdacem[4]++;}
+               else {vdacem[5]++;}
            }
-           else if (nmclst > 1 && neclst == 0 && ngclst == 0){   //  cluster with >1 muons
+           else if (nmclst > 1 && neclst == 0){   //  cluster with >1 muons and perhaps a few gammas
                sidclst = 2;
                iclmus ++;
                iclmut ++;
                xf = xfm; yf = yfm; xl = xlm; yl = ylm;
-               zhf = zhfstm; zhl = zhlstm; azf = azfstm; azl = azlstm;
+               tf = tfm; tl = tlm;
+               zhf = zhfm; zhl = zhlm; azf = azfm; azl = azlm;
+               
+               if (dcc < id1){mclmu[0][0][0]++;}
+               else if (dcc>id1 && dcc<id2){mclmu[1][0][0]++;}
+               else if (dcc>id2 && dcc<id3){mclmu[2][0][0]++;}
+               else if (dcc>id3 && dcc<id4){mclmu[3][0][0]++;}
+               else if (dcc>id4 && dcc<id5){mclmu[4][0][0]++;}
+               else if (dcc>id5 && dcc<id6){mclmu[5][0][0]++;}
+               else if (dcc>id6 && dcc<id7){mclmu[6][0][0]++;}
+               else {mclmu[7][0][0]++;}
+               
+               if (dtc < it1){vdtcmu[0] ++;}
+               else if (dtc> it1 && dtc<it2){vdtcmu[1]++;}
+               else if (dtc> it2 && dtc<it3){vdtcmu[2]++;}
+               else if (dtc> it3 && dtc<it4){vdtcmu[3]++;}
+               else if (dtc> it4 && dtc<it5){vdtcmu[4]++;}
+               else {vdtcmu[5]++;}
+               
+               if (dac < ia1){vdacmu[0] ++;}
+               else if (dac> ia1 && dac<ia2){vdacmu[1]++;}
+               else if (dac> ia2 && dac<ia3){vdacmu[2]++;}
+               else if (dac> ia3 && dac<ia4){vdacmu[3]++;}
+               else if (dac> ia4 && dac<ia5){vdacmu[4]++;}
+               else {vdacmu[5]++;}
            }
            else if (neclst>0 && nmclst>0) {          // mixt cluster with e's & mu's
                sidclst = 3;
                iclmxs ++;
                iclmxt ++;
-               if(tfste<tfstm){
+               if(tfe<tfm){
                   xf  = xfe; yf = yfe;
-                  zhf = zhfste ; azf = azfste ;
+                  zhf = zhfe ; azf = azfe ;
                }
                else{
                   xf  = xfm; yf = yfm;
-                  zhf = zhfstm ; azf = azfstm ;
+                  zhf = zhfm ; azf = azfm ;
                }
-               if(tlste>tlstm){
+               if(tle>tlm){
                   xl  = xle; yl = yle;
-                  zhl = zhlste ; azl = azlste ;
+                  zhl = zhle ; azl = azle ;
                }
                else{
                   xl  = xlm; yl  = ylm;
-                  zhl = zhlstm ; azl = azlstm ;
+                  zhl = zhlm ; azl = azlm ;
                }
+               
+               if (dcc < id1){mclmx[0][0][0]++;}
+               else if (dcc>id1 && dcc<id2){mclmx[1][0][0]++;}
+               else if (dcc>id2 && dcc<id3){mclmx[2][0][0]++;}
+               else if (dcc>id3 && dcc<id4){mclmx[3][0][0]++;}
+               else if (dcc>id4 && dcc<id5){mclmx[4][0][0]++;}
+               else if (dcc>id5 && dcc<id6){mclmx[5][0][0]++;}
+               else if (dcc>id6 && dcc<id7){mclmx[6][0][0]++;}
+               else {mclmx[7][0][0]++;}
+               
+               if (dtc < it1){vdtcmx[0] ++;}
+               else if (dtc> it1 && dtc<it2){vdtcmx[1]++;}
+               else if (dtc> it2 && dtc<it3){vdtcmx[2]++;}
+               else if (dtc> it3 && dtc<it4){vdtcmx[3]++;}
+               else if (dtc> it4 && dtc<it5){vdtcmx[4]++;}
+               else {vdtcmx[5]++;}
+               
+               if (dac < ia1){vdacmx[0] ++;}
+               else if (dac> ia1 && dac<ia2){vdacmx[1]++;}
+               else if (dac> ia2 && dac<ia3){vdacmx[2]++;}
+               else if (dac> ia3 && dac<ia4){vdacmx[3]++;}
+               else if (dac> ia4 && dac<ia5){vdacmx[4]++;}
+               else {vdacmx[5]++;}
            }
            else{iclots ++; iclott ++;}
-           
-           nxf = sin(zhf) * cos(azf) ;
-           nyf = sin(zhf) * sin(azf) ;
-           nzf = cos(zhf);
-           nxl = sin(zhl) * cos(azl) ;
-           nyl = sin(zhl) * sin(azl) ;
-           nzl = cos(zhl);
-           angfl = acos(nxf*nxl + nyf*nyl + nzf*nzl); // * rad2g;
-           distfl = sqrt((xl-xf)*(xl-xf) + (yl-yf)*(yl-yf));
-
-           /*   ---  New cluster
+       
+           /*
+           //   ---  New cluster
            cout << "*** ICluster " << icshow << " - itclust " << iclust << endl;
            cout << "* ClMult "  << cmult <<  " - ClustID " << idclus << endl;
            cout << "--- ShClustID (0-4):   " << sidclst << endl;
            cout << "-- iclems, iclmus, iclmxs, iclots: " << iclems << " " << iclmus << " " << iclmxs << " " << iclots << endl;
-           //cout << "---distfl, angfl:   " << distfl << " " << angfl << endl;
-           //cout<< "--- tfst tlst: " << tfst << "   "<< tlst << endl;
+           //cout << "---dcc, dac:   " << dcc << " " << dac << endl;
+           //cout<< "--- tf tl: " << tf << "   "<< tl << endl;
            //cout << "(xmean, ymean), sigr " << xmean << " " << ymean << " " << sigr << endl;
            cout << endl;
            */
            
-           //*
+           
            file1 << mpcr << "\t"
               << mepcr   << "\t"
-              << zhpcr  << "\t"
               << hghtfi << "\t"
               << ishow+1<< "\t"
               << iclust << "\t"
@@ -698,48 +754,49 @@ void mclusth::Loop()
               << cmult  << "\t"
               << neclst << "\t"
               << nmclst << "\t"
-              << pidfst << "\t"
-              << pidlst << "\t"
+              << idpf << "\t"
+              << idpl << "\t"
 //             << fixed << setprecision(3)
               << setprecision(4)
               << xmean  << "\t"
               << ymean  << "\t"
               << sigr   << "\t"
-              << tfst   << "\t"
-              << tlst   << "\t"
+              << tf   << "\t"
+              << tl   << "\t"
               << tmean  << "\t"
               << sigt   << "\t"
-              << tfste  << "\t"
-              << tlste  << "\t"
-              << zhfste << "\t"
-              << azfste << "\t"
-              << zhlste << "\t"
-              << azlste << "\t"
-              << pmfste << "\t"
-              << pmlste << "\t"
-              << tfstm  << "\t"
-              << tlstm  << "\t"
-              << zhfstm << "\t"
-              << azfstm << "\t"
-              << zhlstm << "\t"
-              << azlstm << "\t"
-              << pmfstm << "\t"
-              << pmlstm << "\t"
-              << distfl << "\t"
-              << angfl  << endl;
-                //*/
+              << tfe  << "\t"
+              << tle  << "\t"
+              << zhfe << "\t"
+              << azfe << "\t"
+              << zhle << "\t"
+              << azle << "\t"
+              << pmfe << "\t"
+              << pmle << "\t"
+              << tfm  << "\t"
+              << tlm  << "\t"
+              << zhfm << "\t"
+              << azfm << "\t"
+              << zhlm << "\t"
+              << azlm << "\t"
+              << pmfm << "\t"
+              << pmlm << "\t"
+              << dcc  << "\t"
+              << dac  << endl;
            
        }  // endif cmult > 1:  new cluster
-               
+       
+       //*/
+       
        tag     = -1; idclus  = 0.; sidclst=0; tmean=0, cmult = 1.;
        sigxsq  = 0.; sigysq  = 0.; sigtsq  = 0;
        ifg     = 0; ife     = 0; ifm     = 0;
        ngclst  = 0; neclst  = 0; nmclst  = 0;
-       tfstg   = 0; tlstg   = 0; tfste   = 0; tlste   = 0;
-       zhfste  = 0; zhlste  = 0; azfste  = 0; azlste  = 0;
-       pmfste  = 0; pmlste  = 0;
-       tfstm   = 0; tlstm   = 0;
-       zhfstm  = 0; zhlstm  = 0; azfstm  = 0; azlstm  = 0;
+       tfg   = 0; tlg   = 0; tfe   = 0; tle   = 0;
+       zhfe  = 0; zhle  = 0; azfe  = 0; azle  = 0;
+       pmfe  = 0; pmle  = 0;
+       tfm   = 0; tlm   = 0;
+       zhfm  = 0; zhlm  = 0; azfm  = 0; azlm  = 0;
        nxf = 0; nxl= 0; nyf = 0; nyl= 0; nzf = 0; nzl= 0;
        xf = 0; xl = 0; yf = 0; yl = 0;
        
@@ -773,7 +830,6 @@ void mclusth::Loop()
    file2
       << mpcr << "\t"
       << epcr   << "\t"
-      << zhpcr  << "\t"
       << hghtfi << "\t"
       << ishow+1<< "\t"
       << nsecp   << "\t"
@@ -822,7 +878,8 @@ void mclusth::Loop()
      // cout << " ishow, nsecp " << ishow << "   " << nsecp  << endl;
        
    } // end of for-loop in showers
-    
+   //} // ***
+       
     emin = mepcr - dene/2;
     emax = mepcr + dene/2;
     gm1  = spindex - 1;
@@ -830,7 +887,6 @@ void mclusth::Loop()
 
 file3<< mpcr  << "\t"
     << epcr    << "\t"
-    << zhpcr   << "\t"
     << mnhgt   << "\t"
     << nshows  << "\t"
     << ntsep   << "\t"
@@ -855,11 +911,82 @@ file3<< mpcr  << "\t"
     << ntel2000 << endl;
     
 cout << endl;
+cout << "mclem rdistribution: " <<
+    mclem[0][0][0] << " " <<
+    mclem[1][0][0] << " " <<
+    mclem[2][0][0] << " " <<
+    mclem[3][0][0] << " " <<
+    mclem[4][0][0] << " " <<
+    mclem[5][0][0] << " " <<
+    mclem[6][0][0] << " " <<
+    mclem[7][0][0] << endl;
+    cout << "mclmu rdistribution: " <<
+    mclmu[0][0][0] << " " <<
+    mclmu[1][0][0] << " " <<
+    mclmu[2][0][0] << " " <<
+    mclmu[3][0][0] << " " <<
+    mclmu[4][0][0] << " " <<
+    mclmu[5][0][0] << " " <<
+    mclmu[6][0][0] << " " <<
+    mclmu[7][0][0] << endl;
+    cout << "mclmx rdistribution: " <<
+    mclmx[0][0][0] << " " <<
+    mclmx[1][0][0] << " " <<
+    mclmx[2][0][0] << " " <<
+    mclmx[3][0][0] << " " <<
+    mclmx[4][0][0] << " " <<
+    mclmx[5][0][0] << " " <<
+    mclmx[6][0][0] << " " <<
+    mclmx[7][0][0] << endl;
+    cout << endl;
+   cout << "dtem distribution: " <<
+   vdtcem[0] << " " <<
+   vdtcem[1] << " " <<
+   vdtcem[2] << " " <<
+   vdtcem[3] << " " <<
+   vdtcem[4] << " " <<
+   vdtcem[5] << endl;
+   cout << "dtmu distribution: " <<
+   vdtcmu[0] << " " <<
+   vdtcmu[1] << " " <<
+   vdtcmu[2] << " " <<
+   vdtcmu[3] << " " <<
+   vdtcmu[4] << " " <<
+   vdtcmu[5] << endl;
+   cout << "dtmx distribution: " <<
+   vdtcmx[0] << " " <<
+   vdtcmx[1] << " " <<
+   vdtcmx[2] << " " <<
+   vdtcmx[3] << " " <<
+   vdtcmx[4] << " " <<
+   vdtcmx[5] << endl;
+    cout << endl;
+   cout << "daem distribution: " <<
+   vdacem[0] << " " <<
+   vdacem[1] << " " <<
+   vdacem[2] << " " <<
+   vdacem[3] << " " <<
+   vdacem[4] << " " <<
+   vdacem[5] << endl;
+   cout << "damu distribution: " <<
+   vdacmu[0] << " " <<
+   vdacmu[1] << " " <<
+   vdacmu[2] << " " <<
+   vdacmu[3] << " " <<
+   vdacmu[4] << " " <<
+   vdacmu[5] << endl;
+   cout << "damx distribution: " <<
+   vdacmx[0] << " " <<
+   vdacmx[1] << " " <<
+   vdacmx[2] << " " <<
+   vdacmx[3] << " " <<
+   vdacmx[4] << " " <<
+   vdacmx[5] << endl;
+       
+cout << endl;
 printf("******  Proceso completado  ******");
 file1.close();
-cout << endl;
 file2.close();
-cout << endl;
 file3.close();
 cout << endl;
     
@@ -881,6 +1008,8 @@ cout << endl;
 // Estimamos densidades de particulas y sigmas correspondientes
 
 }
+
+
 /*
  void bigpm() {
     TFile *f = new TFile("cernstaff.root");
