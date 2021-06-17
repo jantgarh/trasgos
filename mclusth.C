@@ -75,15 +75,21 @@ void mclusth::Loop()
 // METHOD2: replace line
 //    fChain->GetEntry(jentry);       //read all branches
 //by  b_branchname->GetEntry(ientry); //read only this branch
+    
    if (fChain == 0) return;
-
+    
    Long64_t nshows = fChain->GetEntriesFast();
+    
+   cout << " nShower in file: " << nshows << endl;
+   nshows = 10;   //-
+   cout << " nShowers analyzed " << nshows << endl;
 
    Long64_t nbytes = 0, nb = 0;
    Long64_t fbytes = 0, fb = 0;
    Long64_t ebytes = 0, eb = 0;
    Long64_t hbytes = 0, hb = 0;
    Long64_t tbytes = 0, tb = 0;
+    
     // Identificadores de particulas en Corsika:
     //  1        gammas
     //  2 3      e- e+
@@ -245,10 +251,10 @@ void mclusth::Loop()
 // *******************************************************************************
 //nshows = 1;   //-
 // cout << "nshows " << nshows << endl;
-    
+       
    for (Long64_t ishow=0; ishow<nshows; ishow++) {
 
-       // cout << " *** new shower " << endl;
+       // cout << " *** ishow " << ishow << endl;
        
        Long64_t itree = LoadTree(ishow);
        
@@ -256,14 +262,14 @@ void mclusth::Loop()
        
        nb = fChain->GetEntry(itree);   nbytes += nb;
        
-       // if (Cut(ientry) < 0) continue;
-       eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
+       //if (Cut(ientry) < 0) continue;
+       //eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
        fb  = b_shower_FirstHeight->GetEntry(itree);   fbytes += fb;
        hb  = b_shower_Theta->GetEntry(itree);         hbytes += hb;
        tb  = b_shower_Phi->GetEntry(itree);           tbytes += tb;
        
        icont = -1; // index for total nb. of secondaries
-    
+
        hghtfi = shower_FirstHeight/100000; // h en kilometros
        mnhgt = mnhgt + (hghtfi-mnhgt)/(ishow+1);
        epcr = log10(shower_Energy); // h en kilometros

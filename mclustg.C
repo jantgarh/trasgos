@@ -93,13 +93,7 @@ void mclustg::Loop()
     cout << " nshow: " << nshow << endl;
    nshow = 1;   //-
    cout << "nShowers " << nshow << endl;
-    
-   Long64_t nbytes = 0, nb = 0;
-   Long64_t fbytes = 0, fb = 0;
-   Long64_t ebytes = 0, eb = 0;
-   Long64_t hbytes = 0, hb = 0;
-   Long64_t tbytes = 0, tb = 0;
-    
+
     // Estimated flux factor integral
     Float_t emin, emax, gm1, flint;   // energy limits, spindex-1, flux integral
     emin = epcr - dene/2;
@@ -396,11 +390,16 @@ void mclustg::Loop()
        Long64_t itree = LoadTree(ishow);
        
        if (itree < 0) break;
+        
+        Long64_t nbytes = 0, nb = 0;
+        Long64_t fbytes = 0, fb = 0;
+        Long64_t ebytes = 0, eb = 0;
+        Long64_t hbytes = 0, hb = 0;
+        Long64_t tbytes = 0, tb = 0;
        
        nb = fChain->GetEntry(itree);   nbytes += nb;
-       
        // if (Cut(ientry) < 0) continue;
-       eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
+       //eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
        fb  = b_shower_FirstHeight->GetEntry(itree);   fbytes += fb;
        hb  = b_shower_Theta->GetEntry(itree);         hbytes += hb;
        tb  = b_shower_Phi->GetEntry(itree);           tbytes += tb;

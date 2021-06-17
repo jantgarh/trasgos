@@ -38,9 +38,10 @@
 //#define fout1 "soclst_p_02_15km.txt" //   cluster output summary
 //#define fout2 "soshws_p_02_15km.txt" //   shower output summary
 //#define fout3 "sopart_p_02_15km.txt" //   particle output summary
-#define fout1 "xmclust_cls.txt" //
-#define fout2 "xmclust_shs.txt" //
-#define fout3 "xmclust_prs.txt" //
+#define fout1 "of_clustc.txt" // output files
+#define fout2 "of_clusts.txt" //
+#define fout3 "of_clustp.txt" //
+#define fout4 "of_clustm.txt" //
 
 void mclust::Loop()
 {
@@ -57,9 +58,9 @@ void mclust::Loop()
    if (fChain == 0) return;
     
    Long64_t nshows = fChain->GetEntriesFast();
-   cout << " nShower in file: " << nshows << endl;
-   //nshows = 1;   //-
-   cout << " nShowers analyzed " << nshows << endl;
+   cout << "- nShower in file:   " << nshows << endl;
+   //nshows = 10;   //-
+   cout << "- nShowers analyzed: " << nshows << endl;
 
    Long64_t nbytes = 0, nb = 0;
    Long64_t fbytes = 0, fb = 0;
@@ -130,13 +131,17 @@ void mclust::Loop()
     fstream file1;
     fstream file2;
     fstream file3;
-    file1.open(fout1, fstream::out); //-    Clusters summary
-    file2.open(fout2, fstream::out); //-    Shower summary
-    file3.open(fout3, fstream::out); //-    Particle summary
+    fstream file4;
+    
+    file1.open(fout1, fstream::out); //- Clusters summary
+    file2.open(fout2, fstream::out); //- Shower summary
+    file3.open(fout3, fstream::out); //- Particle summary
+    file4.open(fout4, fstream::out); //- Micro summary
 
     file1 << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
     file2 << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
     file3 << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
+    file4 << "# DistMx, SigRMx: " << "\t" <<distmx  << "\t" << sigrmx << endl;
 
     file1 <<
     "#PrCR"    << "\t" <<
@@ -231,6 +236,50 @@ void mclust::Loop()
     "Ntel1K"   << "\t" <<
     "Ntel2K"   <<endl ;
     
+    file4 <<
+    "#PrimCR"  << "\t" <<
+    "EnePCR"   << "\t" <<
+    "NShow"    << "\t" <<
+    "Ntele"    << "\t" <<
+    "NtMu"     << "\t" <<
+    "NClEl"    << "\t" <<
+    "NClMu"    << "\t" <<
+    "NClMx"    << "\t" <<
+    "Nte100"   << "\t" <<
+    "Nte200"   << "\t" <<
+    "Nte500"   << "\t" <<
+    "Ntel1K"   << "\t" <<
+    "NCElR1"   << "\t" <<
+    "NCElR2"   << "\t" <<
+    "NCElR3"   << "\t" <<
+    "NCElR4"   << "\t" <<
+    "NCMuR1"   << "\t" <<
+    "NCMuR2"   << "\t" <<
+    "NCMuR3"   << "\t" <<
+    "NCMuR4"   << "\t" <<
+    "NCMxR1"   << "\t" <<
+    "NCMxR2"   << "\t" <<
+    "NCMxR3"   << "\t" <<
+    "NCMxR4"   << "\t" <<
+    "NCElT1"   << "\t" <<
+    "NCElT2"   << "\t" <<
+    "NCElT3"   << "\t" <<
+    "NCMuT1"   << "\t" <<
+    "NCMuT2"   << "\t" <<
+    "NCMuT3"   << "\t" <<
+    "NCMxT1"   << "\t" <<
+    "NCMxT2"   << "\t" <<
+    "NCMxT3"   << "\t" <<
+    "NCElA1"   << "\t" <<
+    "NCElA2"   << "\t" <<
+    "NCElA3"   << "\t" <<
+    "NCMuA1"   << "\t" <<
+    "NCMuA2"   << "\t" <<
+    "NCMuA3"   << "\t" <<
+    "NCMxA1"   << "\t" <<
+    "NCMxA2"   << "\t" <<
+    "NCMxA3"   << endl ;
+    
     for (Int_t ie=0; ie<ndist; ie++)
         for (Int_t it=0; it<ndelt; it++)
             for (Int_t ia=0; ia< ndang; ia++)
@@ -259,7 +308,11 @@ void mclust::Loop()
        nb = fChain->GetEntry(itree);   nbytes += nb;
        
        // if (Cut(ientry) < 0) continue;
-       eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
+       
+       //eb  = b_shower_Energy->GetEntry(itree);        ebytes += eb;
+       
+       //cout << " Ene " << shower_Energy << endl;
+       
        fb  = b_shower_FirstHeight->GetEntry(itree);   fbytes += fb;
        hb  = b_shower_Theta->GetEntry(itree);         hbytes += hb;
        tb  = b_shower_Phi->GetEntry(itree);           tbytes += tb;
@@ -333,6 +386,8 @@ void mclust::Loop()
            ntele++;
            neles++;
            
+           
+           
            // cout << "*** ishow, ip, pmod " << ishow << "   " << ip << "   " << pmod << endl;
            
            if (pmod < iee1){nel50++; ntel50++;}
@@ -398,6 +453,7 @@ void mclust::Loop()
            nps++;
        }
        else{
+           //cout << "-- pid  " << pid << endl;
            idp = ido;
            noth++;
            ntoth++;
@@ -880,6 +936,49 @@ file3<< mpcr  << "\t"
     << ntel1000 << "\t"
     << ntel2000 << endl;
     
+file4 << mpcr  << "\t"
+    << epcr    << "\t"
+    << nshows  << "\t"
+    << ntele   << "\t"
+    << ntmu    << "\t"
+    << iclemt  << "\t"
+    << iclmut  << "\t"
+    << iclmxt  << "\t"
+    << ntel50 + ntel100  << "\t"
+    << ntel150 + ntel200  << "\t"
+    << ntel300 + ntel500  << "\t"
+    << ntel1000 + ntel2000  << "\t"
+    << vdccem[0] << "\t"
+    << vdccem[1] + vdccem[2] << "\t"
+    << vdccem[3] + vdccem[4] << "\t"
+    << vdccem[5] + vdccem[6] + vdccem[7] << "\t"
+    << vdccmu[0] << "\t"
+    << vdccmu[1] + vdccmu[2] << "\t"
+    << vdccmu[3] + vdccmu[4] << "\t"
+    << vdccmu[5] + vdccmu[6] + vdccmu[7] << "\t"
+    << vdccmu[0] << "\t"
+    << vdccmx[1] + vdccmx[2] << "\t"
+    << vdccmx[3] + vdccmx[4] << "\t"
+    << vdccmx[5] + vdccmx[6] + vdccmx[7] << "\t"
+    << vdtcem[0] << "\t"
+    << vdtcem[1] + vdtcem[2] << "\t"
+    << vdtcem[3] + vdtcem[4] + vdtcem[5] << "\t"
+    << vdtcmu[0] << "\t"
+    << vdtcmu[1] + vdtcmu[2] << "\t"
+    << vdtcmu[3] + vdtcmu[4] + vdtcmu[5] << "\t"
+    << vdtcmx[0] << "\t"
+    << vdtcmx[1] + vdtcmx[2] << "\t"
+    << vdtcmx[3] + vdtcmx[4] + vdtcmx[5] << "\t"
+    << vdacem[0] << "\t"
+    << vdacem[1] + vdacem[2] << "\t"
+    << vdacem[3] + vdacem[4] + vdacem[5] << "\t"
+    << vdacmu[0] << "\t"
+    << vdacmu[1] + vdacmu[2] << "\t"
+    << vdacmu[3] + vdacmu[4] + vdacmu[5] << "\t"
+    << vdacmx[0] << "\t"
+    << vdacmx[1] + vdacmx[2] << "\t"
+    << vdacmx[3] + vdacmx[4] + vdacmx[5] << endl;
+    
 cout << endl;
     
 cout << "- Radial slices/m ["<<id1<<","<<id2<<","<<id3<<","<<id4<<","<<id5<<","<<id6<<","<<id7<<"]:"  << endl;
@@ -964,6 +1063,7 @@ printf("******  Proceso completado  ******");
 file1.close();
 file2.close();
 file3.close();
+file4.close();
 cout << endl;
     
 cout << " - Parametros iniciales. MxDist - MxSigr: " << distmx << "  " << sigrmx << endl;
