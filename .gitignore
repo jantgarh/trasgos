@@ -2,3 +2,5 @@
 x*.*
 dac_ejemplos/*
 data/*
+.DS_Store
+
